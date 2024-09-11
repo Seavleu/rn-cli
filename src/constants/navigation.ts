@@ -4,7 +4,8 @@ import AddBoard from '@/screens/AddBoard'
 import Detail from '@/screens/Detail'
 import History from '@/screens/History'
 import UserInfo from '@/screens/UserInfo'
-import Setting from '@/screens/Setting'
+import Setting from '@/screens/Setting'   
+import Error from '@/screens/Error'
 
 type AppNavigator = {
   name: keyof AppNavigationParamList
@@ -31,5 +32,8 @@ export const APP_NAVIGATOR = [
   {
     name: 'Setting',
     component: Setting
-  }
+  },{
+    name: 'Error',
+    component: Error
+  }, 
 ] as AppNavigator[]

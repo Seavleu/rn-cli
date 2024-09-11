@@ -11,10 +11,10 @@ export const Inspection = ({ V, navigation }: { V: any; navigation: any }) => {
   return (
     <RNView
       key={V.inspection_seq}
-      style={[{ borderBottomWidth: 1, borderColor: colors.rgba005 }]}>
+      style={[{ marginTop: 14, borderBottomWidth: 1, borderColor: colors.rgba005, borderRadius: 8 }]}>
       <TouchRect
         onPress={() => navigation.navigate('Detail', { id: V.inspection_seq })}
-        style={[spacing.px_14, spacing.py_18, spacing.gap_6]}>
+        style={[spacing.px_14, spacing.py_18, spacing.gap_6]}> 
         <RNText style={[fonts.w700]} numberOfLines={1} ellipsizeMode="tail">
           {V.title}
         </RNText>
@@ -55,12 +55,16 @@ export const ErrorFix = ({ V, navigation }: { V: any; navigation: any }) => {
   return (
     <RNView
       key={V.inspection_seq}
-      style={[{ borderBottomWidth: 1, borderColor: colors.rgba005 }]}>
+      style={[{ marginTop: 14, borderBottomWidth: 1, borderColor: colors.rgba005, borderRadius: 8 }]}>
       <TouchRect
         onPress={() =>
           navigation.navigate('Detail', { id: V.device_error_fix_seq })
         }
-        style={[spacing.p_14, spacing.gap_6]}>
+        style={[spacing.px_14, spacing.py_18, spacing.gap_6]}>
+        <RNText style={[fonts.w700, fonts.alignCenter]} >
+          {V.device_type || " "}
+        </RNText>
+        <RNView style={[{ borderColor: colors.rgba005, borderWidth: 1, borderStyle: 'dotted' }]} />
         <RNText style={[fonts.w700]} numberOfLines={1} ellipsizeMode="tail">
           {V.title}
         </RNText>

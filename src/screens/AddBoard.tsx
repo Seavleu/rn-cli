@@ -147,18 +147,21 @@ const AddBoard = ({ route, navigation }: AddBoardProps) => {
 
   const createRequestData = () => {
     const newFileSeqList = files.map((file) => file.attached_file_seq)
+
     const req: any = {
       title,
       content,
       file_seq_list: newFileSeqList.join(','),
       plant_seq: userInfo?.plant_seq,
       reg_user_seq: userInfo?.user_seq,
+
       ...(isInspection ? { ins_type: type } : { device_error_seq: type })
     }
 
     if (data) {
       Object.assign(
         req,
+
         isInspection
           ? { inspection_seq: data.info.inspection_seq }
           : { device_error_fix_seq: data.data.device_error_fix_seq }
@@ -206,6 +209,9 @@ const AddBoard = ({ route, navigation }: AddBoardProps) => {
             <RNText style={[fonts.size_14]}>
               {isInspection ? '점검 유형 선택' : '문제조치 유형 선택'}
             </RNText>
+
+            {/* Rendering modal */}
+            
             <View
               style={[
                 {
@@ -215,7 +221,7 @@ const AddBoard = ({ route, navigation }: AddBoardProps) => {
                   height: 50,
                   justifyContent: 'center'
                 }
-              ]}>
+              ]}> 
               {isInspection ? (
                 <Picker
                   selectedValue={type}
@@ -267,6 +273,7 @@ const AddBoard = ({ route, navigation }: AddBoardProps) => {
               }}
             />
           </View>
+
           <View style={[spacing.gap_6, spacing.mb_12]}>
             <View style={[layout.row, layout.alignEnd, layout.justifyBetween]}>
               <RNText style={[fonts.size_14]}>이미지 등록</RNText>
@@ -288,7 +295,6 @@ const AddBoard = ({ route, navigation }: AddBoardProps) => {
                       borderColor: colors.rgba080,
                       marginLeft: idx !== 0 ? 10 : 0
                     }}
-                    
                   />
                   <TouchableOpacity
                     onPress={() => removeImage(V.attached_file_seq)}

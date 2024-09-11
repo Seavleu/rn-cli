@@ -34,7 +34,8 @@ const Detail = ({ route, navigation }: DetailProps) => {
   const { id } = route.params
   const { category } = useCategoryStore()
 
-  const key = category === 'inspection' ? 'info' : 'data'
+  const key = category === 'inspection' 
+  ? 'info' : 'data'
   const endPoint =
     category === 'inspection'
       ? `/api/device/inspection?inspection_seq=${id}`
