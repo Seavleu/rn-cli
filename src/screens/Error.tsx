@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -34,7 +35,7 @@ const Error = ({ navigation }: HistoryProps) => {
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(''); // Separate state for input
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchData, setSearchData] = useState({
     query_search: 'title', // Default search type
     query_value: '', // User input for search
@@ -42,25 +43,18 @@ const Error = ({ navigation }: HistoryProps) => {
 
   const { category, setCategory } = useCategoryStore();
   const { userInfo } = useUserStore();
-
-  const plantSeq = userInfo?.plant_seq || ''; // Fallback if userInfo is null or undefined
-
-  // Build query string
-  const queryString = `plant_seq=${plantSeq}&query_search=${searchData.query_search}&query_value=${searchData.query_value}&page=${page}`;
   
-  // Log the query string to debug
-  console.log('Query String:', queryString);
+  // Fallback value for plant_seq if userInfo is null
+  const plantSeq = userInfo?.plant_seq || '';
 
+  // Constructing query string
+  const queryString = `plant_seq=${plantSeq}&query_search=${searchData.query_search}&query_value=${searchData.query_value}&page=${page}`;
   const { data, isLoading, mutate } = useSWR(
     `/api/device/${category}/list?${queryString}`,
     fetcher
   );
 
-  useEffect(() => {
-    console.log('Fetched Data:', data);
-  }, [data]);
-
-  // Fetch more data on scroll
+  // Fetch more data for pagination
   const getMoreData = async () => {
     if (!loadingMore) {
       setLoadingMore(true);
@@ -70,35 +64,49 @@ const Error = ({ navigation }: HistoryProps) => {
     }
   };
 
-  // Fetch data initially or when category changes
+  // Fetch data when switching categories or performing search
   const getData = async () => {
-    setPage(1); // Reset the page when re-fetching the entire dataset
+    setPage(1); // Reset page when re-fetching
     await mutate();
   };
 
-  const onPressCategory = (category: string) => {
+  const onPressCategory = (newCategory: string) => {
     setModalVisible(false);
-    setCategory(category);
+    if (newCategory !== category) {
+      // Reset search when switching categories
+      setSearchQuery('');
+      setSearchData({ query_search: 'title', query_value: '' });
+      setSearchPerformed(false);
+      setCategory(newCategory);
+      getData();
+    }
   };
 
+  // Perform search logic with validation
   const performSearch = () => {
-    console.log("Search initiated with query value: ", searchQuery); // Debug the search value
+    if (searchQuery.length < 2) {
+      Alert.alert("알림", "검색어를 최소 2자 이상 입력해 주세요.");
+      return;
+    }
     setSearchData((prev) => ({ ...prev, query_value: searchQuery }));
     setSearchPerformed(true);
     getData();
   };
 
+  // Clear search input and reset state
   const clearSearch = () => {
-    setSearchQuery(''); // Clear the input field separately
+    setSearchQuery('');
     setSearchData({ query_search: 'title', query_value: '' });
     setSearchPerformed(false);
     setPage(1);
     getData();
   };
 
+  // Search Box UI and logic
   const SearchBox = useMemo(() => {
     return (
-      <View style={[layout.col, spacing.p_14, spacing.mt_14]}> 
+      <View style={[layout.col, spacing.p_14, spacing.mt_14]}>
+        {/* Picker and Input Row */}
         <View style={[layout.row, layout.alignCenter, spacing.gap_14]}>
           <View>
             <RNText style={[fonts.size_14]}></RNText>
@@ -108,8 +116,8 @@ const Error = ({ navigation }: HistoryProps) => {
                 borderColor: colors.text,
                 borderRadius: 8,
                 height: 50,
-                justifyContent: 'center', 
-                width: 120
+                justifyContent: 'center',
+                width: 120,
               }}
             >
               <Picker
@@ -129,7 +137,7 @@ const Error = ({ navigation }: HistoryProps) => {
 
           <View style={[layout.flex_1]}>
             <RNText style={[fonts.size_14]}>
-              {searchData.query_search === 'title' }
+              {searchData.query_search === 'title' ? '제목 검색' : '내용 검색'}
             </RNText>
             <TextInput
               style={[
@@ -141,7 +149,7 @@ const Error = ({ navigation }: HistoryProps) => {
                 searchData.query_search === 'title' ? '제목 검색' : '내용 검색'
               }
               value={searchQuery}
-              onChangeText={(text) => setSearchQuery(text)} // Only update input state
+              onChangeText={(text) => setSearchQuery(text)}
             />
           </View>
         </View>
@@ -165,7 +173,7 @@ const Error = ({ navigation }: HistoryProps) => {
             <RNText style={[fonts.w700]}>검색</RNText>
           </TouchableOpacity>
 
-          {/* Clear Search Button - only visible after search is performed */}
+          {/* Clear Search Button */}
           {searchPerformed && (
             <TouchableOpacity
               onPress={clearSearch}
@@ -189,15 +197,10 @@ const Error = ({ navigation }: HistoryProps) => {
     );
   }, [searchData, searchQuery]);
 
+  // Render a message when no search results are found
   const searchNotFound = () => {
     return (
-      <RNView
-        style={[
-          layout.alignCenter,
-          layout.justifyCenter,
-          { height: 200 }, 
-        ]}
-      >
+      <RNView style={[layout.alignCenter, layout.justifyCenter, { height: 200 }]}>
         <RNText style={[fonts.size_16, fonts.w500, { color: colors.text }]}>
           검색 결과가 없습니다.
         </RNText>
@@ -223,10 +226,7 @@ const Error = ({ navigation }: HistoryProps) => {
   return (
     <SafeAreaScreen>
       <RNView
-        style={[
-          components.header,
-          { borderBottomWidth: 1, borderColor: colors.rgba010 },
-        ]}
+        style={[components.header, { borderBottomWidth: 1, borderColor: colors.rgba010 }]}
       >
         <TouchRect
           style={[layout.row, layout.alignCenter, spacing.gap_4, spacing.p_4]}
@@ -238,10 +238,7 @@ const Error = ({ navigation }: HistoryProps) => {
           <Icon name="chevron-down" size={20} color={colors.text} />
         </TouchRect>
         <View style={[layout.row, layout.alignCenter, spacing.gap_6]}>
-          <TouchCircle
-            style={[spacing.p_4]}
-            onPress={() => setModalVisible(true)}
-          >
+          <TouchCircle style={[spacing.p_4]} onPress={() => setModalVisible(true)}>
             <Icon name="search" size={25} color={colors.text} />
           </TouchCircle>
           <TouchCircle style={[spacing.p_4]}>
@@ -253,7 +250,8 @@ const Error = ({ navigation }: HistoryProps) => {
             />
           </TouchCircle>
         </View>
-      </RNView>       
+      </RNView>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
@@ -279,54 +277,55 @@ const Error = ({ navigation }: HistoryProps) => {
               onRefresh={async () => {
                 setRefreshing(true);
                 await mutate();
-                setRefreshing(false);
+                setRefreshing(false)
               }}
-            />
-          }
-          ListEmptyComponent={searchNotFound}
-          contentContainerStyle={[spacing.p_14]}
-        />
-      </KeyboardAvoidingView>
-
-      <TouchCircle
-        onPress={() => navigation.navigate('AddBoard', { data: undefined })}
-        style={[
-          layout.absolute,
-          spacing.p_10,
-          { bottom: 40, right: 20, backgroundColor: colors.primary },
-        ]}
-      >
-        <Icon name="add" size={40} color={'#fff'} />
-      </TouchCircle>
-
-      <CustomModal visible={modalVisible} onClose={() => setModalVisible(false)}>
-        <RNView
+              />
+            }
+            ListEmptyComponent={searchNotFound}
+            contentContainerStyle={[spacing.p_14]}
+          />
+        </KeyboardAvoidingView>
+  
+        <TouchCircle
+          onPress={() => navigation.navigate('AddBoard', { data: undefined })}
           style={[
             layout.absolute,
-            {
-              width: 150,
-              top: 85,
-              left: 10,
-              borderRadius: 10,
-            },
+            spacing.p_10,
+            { bottom: 40, right: 20, backgroundColor: colors.primary },
           ]}
         >
-          <TouchableOpacity
-            onPress={() => onPressCategory('inspection')}
-            style={[spacing.p_16]}
+          <Icon name="add" size={40} color={'#fff'} />
+        </TouchCircle>
+  
+        <CustomModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+          <RNView
+            style={[
+              layout.absolute,
+              {
+                width: 150,
+                top: 85,
+                left: 10,
+                borderRadius: 10,
+              },
+            ]}
           >
-            <RNText>정기점검</RNText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onPressCategory('error_fix')}
-            style={[spacing.p_16]}
-          >
-            <RNText>문제조치</RNText>
-          </TouchableOpacity>
-        </RNView>
-      </CustomModal>
-    </SafeAreaScreen>
-  );
-};
-
-export default Error;
+            <TouchableOpacity
+              onPress={() => onPressCategory('inspection')}
+              style={[spacing.p_16]}
+            >
+              <RNText>정기점검</RNText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => onPressCategory('error_fix')}
+              style={[spacing.p_16]}
+            >
+              <RNText>문제조치</RNText>
+            </TouchableOpacity>
+          </RNView>
+        </CustomModal>
+      </SafeAreaScreen>
+    );
+  };
+  
+  export default Error;
+  
