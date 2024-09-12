@@ -1,6 +1,5 @@
 import {
   View,
-  TextInput,
   ActivityIndicator,
   FlatList,
   RefreshControl,
@@ -9,7 +8,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import React, { useCallback, useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { RNText, RNView } from '@/components/Custom';
 import { SafeAreaScreen } from '@/components/SafeAreaScreen';
@@ -21,8 +20,8 @@ import { useCategoryStore } from '@/stores/category';
 import useTheme from '@/theme/hooks';
 import useSWR from 'swr';
 import CustomModal from '@/components/CustomModal';
-import { Picker } from '@react-native-picker/picker';
 import { ErrorFix, Inspection } from '@/components/HistoryList';
+import SearchBox from './Search';
 
 type HistoryProps = {
   navigation: AppStackNavigatorProps;
@@ -37,24 +36,20 @@ const Error = ({ navigation }: HistoryProps) => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchData, setSearchData] = useState({
-    query_search: 'title', // Default search type
-    query_value: '', // User input for search
+    query_search: 'title',  
+    query_value: '', 
   });
 
   const { category, setCategory } = useCategoryStore();
   const { userInfo } = useUserStore();
-  
-  // Fallback value for plant_seq if userInfo is null
-  const plantSeq = userInfo?.plant_seq || '';
 
-  // Constructing query string
+  const plantSeq = userInfo?.plant_seq;
+
   const queryString = `plant_seq=${plantSeq}&query_search=${searchData.query_search}&query_value=${searchData.query_value}&page=${page}`;
   const { data, isLoading, mutate } = useSWR(
     `/api/device/${category}/list?${queryString}`,
     fetcher
   );
-
-  // Fetch more data for pagination
   const getMoreData = async () => {
     if (!loadingMore) {
       setLoadingMore(true);
@@ -81,8 +76,7 @@ const Error = ({ navigation }: HistoryProps) => {
       getData();
     }
   };
-
-  // Perform search logic with validation
+ 
   const performSearch = () => {
     if (searchQuery.length < 2) {
       Alert.alert("알림", "검색어를 최소 2자 이상 입력해 주세요.");
@@ -92,8 +86,7 @@ const Error = ({ navigation }: HistoryProps) => {
     setSearchPerformed(true);
     getData();
   };
-
-  // Clear search input and reset state
+ 
   const clearSearch = () => {
     setSearchQuery('');
     setSearchData({ query_search: 'title', query_value: '' });
@@ -101,103 +94,7 @@ const Error = ({ navigation }: HistoryProps) => {
     setPage(1);
     getData();
   };
-
-  // Search Box UI and logic
-  const SearchBox = useMemo(() => {
-    return (
-      <View style={[layout.col, spacing.p_14, spacing.mt_14]}>
-        {/* Picker and Input Row */}
-        <View style={[layout.row, layout.alignCenter, spacing.gap_14]}>
-          <View>
-            <RNText style={[fonts.size_14]}></RNText>
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: colors.text,
-                borderRadius: 8,
-                height: 50,
-                justifyContent: 'center',
-                width: 120,
-              }}
-            >
-              <Picker
-                selectedValue={searchData.query_search}
-                onValueChange={(itemValue) =>
-                  setSearchData((prev) => ({
-                    ...prev,
-                    query_search: itemValue,
-                  }))
-                }
-              >
-                <Picker.Item label="제목" value="title" />
-                <Picker.Item label="내용" value="content" />
-              </Picker>
-            </View>
-          </View>
-
-          <View style={[layout.flex_1]}>
-            <RNText style={[fonts.size_14]}>
-              {searchData.query_search === 'title' ? '제목 검색' : '내용 검색'}
-            </RNText>
-            <TextInput
-              style={[
-                components.input,
-                { borderColor: colors.text, borderWidth: 1, borderRadius: 8 },
-                spacing.pl_10,
-              ]}
-              placeholder={
-                searchData.query_search === 'title' ? '제목 검색' : '내용 검색'
-              }
-              value={searchQuery}
-              onChangeText={(text) => setSearchQuery(text)}
-            />
-          </View>
-        </View>
-
-        {/* Search Button */}
-        <View style={[layout.row, spacing.mt_14]}>
-          <TouchableOpacity
-            onPress={performSearch}
-            style={[
-              layout.flex_1,
-              layout.alignCenter,
-              layout.justifyCenter,
-              {
-                borderWidth: 1,
-                borderColor: colors.text,
-                borderRadius: 10,
-                paddingVertical: 10,
-              },
-            ]}
-          >
-            <RNText style={[fonts.w700]}>검색</RNText>
-          </TouchableOpacity>
-
-          {/* Clear Search Button */}
-          {searchPerformed && (
-            <TouchableOpacity
-              onPress={clearSearch}
-              style={[
-                layout.flex_1,
-                layout.alignCenter,
-                layout.justifyCenter,
-                {
-                  marginLeft: 10,
-                  backgroundColor: colors.primary,
-                  borderRadius: 10,
-                  paddingVertical: 10,
-                },
-              ]}
-            >
-              <RNText style={[fonts.w700, { color: '#fff' }]}>검색 초기화</RNText>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    );
-  }, [searchData, searchQuery]);
-
-  // Render a message when no search results are found
+ 
   const searchNotFound = () => {
     return (
       <RNView style={[layout.alignCenter, layout.justifyCenter, { height: 200 }]}>
@@ -207,7 +104,6 @@ const Error = ({ navigation }: HistoryProps) => {
       </RNView>
     );
   };
-
   if (isLoading && !data) {
     return (
       <RNView
@@ -270,7 +166,17 @@ const Error = ({ navigation }: HistoryProps) => {
               <ErrorFix V={item} navigation={navigation} />
             )
           }
-          ListHeaderComponent={SearchBox}
+          ListHeaderComponent={
+            <SearchBox 
+              searchData={searchData}
+              setSearchData={setSearchData}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              performSearch={performSearch}
+              clearSearch={clearSearch}
+              searchPerformed={searchPerformed}
+            />
+          }
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -285,7 +191,6 @@ const Error = ({ navigation }: HistoryProps) => {
             contentContainerStyle={[spacing.p_14]}
           />
         </KeyboardAvoidingView>
-  
         <TouchCircle
           onPress={() => navigation.navigate('AddBoard', { data: undefined })}
           style={[
