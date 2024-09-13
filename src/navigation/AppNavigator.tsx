@@ -12,6 +12,7 @@ export type AppNavigationParamList = {
   UserInfo: undefined
   Setting: undefined  
   Error: undefined
+  Status: undefined
 }
 
 export type AppStackNavigatorProps =
@@ -21,7 +22,7 @@ const Stack = createNativeStackNavigator<AppNavigationParamList>()
 
 const AppNavigator = () => {
   return (
-    <Stack.Navigator initialRouteName="Error">
+    <Stack.Navigator initialRouteName="Status">
       {APP_NAVIGATOR.map((route) => (
         <Stack.Screen
           key={route.name}

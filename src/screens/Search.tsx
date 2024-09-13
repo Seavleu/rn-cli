@@ -51,6 +51,7 @@ const SearchBox = ({
                   }))
                 }
               >
+                <Picker.Item />
                 <Picker.Item label="제목" value="title" />
                 <Picker.Item label="내용" value="content" />
               </Picker>
