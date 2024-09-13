@@ -148,6 +148,7 @@ const Error = ({ navigation }: HistoryProps) => {
         </View>
       </RNView>
 
+      {/* TODO: Find Undefined On the Combo box */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
