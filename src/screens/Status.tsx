@@ -6,13 +6,13 @@ import { SafeAreaScreen } from '@/components/SafeAreaScreen';
 import { TouchCircle, TouchRect } from '@/components/Touch';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Table, Row, Rows, TableWrapper, Col } from 'react-native-table-component';
+import { Table, Row, Rows, TableWrapper, Col, Cell } from 'react-native-table-component';
 
 const Status = () => {
   const { layout, fonts, colors, components, spacing } = useTheme();
-
-  const [tableHead] = useState(['지역', '일출', '날씨', '기온', '강수/적설', '확률', '강수량', '적설량', '습도', '풍속', '풍향', '일몰']);
-  const [widthArr] = useState([40, 60, 80, 100, 120]);
+  const [firstRow] = useState(['지역', '일출', '기온', '강수/적설', '확률', '강수량', '적설량', '습도', '풍속', '풍속', '풍향', '일몰']);
+  const [secondRow] = useState(['', '시 : 분', '', '℃', '%', 'mm', 'cm', '%', 'm/s', '', '시 : 분']);
+  const [widthArr] = useState([40, 60, 80, 100, 40, 60, 80, 100, 120, 40, 60, 80,]);
 
   const tableData = [];
   for (let i = 0; i < 3; i += 1) {
@@ -59,30 +59,29 @@ const Status = () => {
             </RNView>
 
             {/* Table */}
-            <RNView style={{ flex: 1, padding: 16, paddingTop: 30, backgroundColor: colors.rgba010 }}>
+            <RNView style={{ flex: 1, padding: 16, paddingTop: 30 }}>
               <ScrollView horizontal={true}>
-                <View>
-                  <Table borderStyle={{ borderWidth: 1, borderColor: colors.text }}>
-                    <Row data={tableHead} widthArr={widthArr} style={styles.header} textStyle={styles.text} />
-                  </Table>
-                  <ScrollView style={styles.dataWrapper}>
-                    <Table borderStyle={{ borderWidth: 1, borderColor: colors.text }}>
-                      {tableData.map((rowData, index) => (
-                        <Row
-                          key={index}
-                          data={rowData}
-                          widthArr={widthArr}
-                          style={[styles.row, index % 2 && { backgroundColor: 'gray' }]}
-                          textStyle={styles.text}
-                        />
-                      ))}
-
-                      <TableWrapper style={{flexDirection: 'row'}}>
-                        <Col data={['H1','H1' ]} style={{flex: 2}} heightArr={[60,60, 60,60]} textStyle={styles.text} /> 
+                <RNView>
+                  <View>
+                    <Table borderStyle={{ borderWidth: 1, borderColor: '#C1C0B9' }}>
+                      <TableWrapper style={styles.wrapper}>
+                        {/* First row (with merged cells for "지역" and "날씨") */}
+                        <Cell data={firstRow[0]} style={[styles.headerCell, { width: widthArr[0], height: 80 }]} textStyle={styles.headerText} />
+                        <TableWrapper style={{ flexDirection: 'column', flex: 1 }}>
+                          <Row data={[firstRow[1], firstRow[2]]} widthArr={widthArr.slice(1, 3)} style={styles.headerCell} textStyle={styles.headerText} />
+                          <Row data={[secondRow[1], secondRow[2]]} widthArr={widthArr.slice(1, 3)} style={styles.subHeaderCell} textStyle={styles.headerText} />
+                        </TableWrapper>
+                        <Row data={firstRow.slice(3)} widthArr={widthArr.slice(3)} style={styles.headerCell} textStyle={styles.headerText} />
+                        <Row data={secondRow.slice(3)} widthArr={widthArr.slice(3)} style={styles.subHeaderCell} textStyle={styles.headerText} />
                       </TableWrapper>
                     </Table>
-                  </ScrollView>
-                </View>
+
+                    {/* Table Body */}
+                    <Table borderStyle={{ borderWidth: 1, borderColor: '#C1C0B9' }}>
+                      <Row data={tableData[0]} widthArr={widthArr} style={styles.bodyRow} textStyle={styles.bodyText} />
+                    </Table>
+                  </View>
+                </RNView>
               </ScrollView>
             </RNView>
 
@@ -94,11 +93,16 @@ const Status = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 30 },
-  header: { height: 50, },
+  container: { flex: 1, padding: 20, paddingTop: 30 },
+  wrapper: { flexDirection: 'row' },
+  header: { height: 50 },
   text: { textAlign: 'center', fontWeight: '100' },
   dataWrapper: { marginTop: -1 },
   row: { height: 40 },
+  mergedCell: { flex: 1, height: 80 },
+  headerCell: { height: 50, },
+  headerText: { textAlign: 'center', fontWeight: 'bold', color: '#fff' },
+
 });
 
 export default Status;
