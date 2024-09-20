@@ -18,7 +18,7 @@ export const lightColors = {
 }
 
 export const darkColors = {
-  background: '#181818',
+  background: '#162E72',
   text: '#ffffff',
   primary: '#647FC4',
   rgba001: 'rgba(255, 255, 255, 0.01)',
