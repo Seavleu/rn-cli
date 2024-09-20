@@ -17,6 +17,7 @@
     "@react-navigation/native-stack": "^6.9.26",
     "axios": "^1.7.3",
     "install": "^0.13.0",
+    "moment": "^2.30.1",
     "npm": "^10.8.2",
     "pod": "^0.9.0",
     "react": "18.2.0",

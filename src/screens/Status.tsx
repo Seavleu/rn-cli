@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import React, { useState } from 'react';
 import useTheme from '@/theme/hooks';
 import { RNText, RNView } from '@/components/Custom';
@@ -7,14 +7,58 @@ import { TouchCircle, TouchRect } from '@/components/Touch';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Table, TableWrapper, Cell } from 'react-native-table-component';
+import { useUserStore } from '@/stores';
+import useSWR from 'swr';
+import { fetcher } from '@/services';
+import moment from 'moment';
+import { returnToLocaleStrings } from '@/utils/format';
 
-const Status = () => {
+type SunPvDataItem = {
+  device_name: string;
+  device_status: string;
+  t_m: string;
+  t_o: string;
+  solar_h: string;
+  solar_v: string;
+  gen_hour: string;
+  dc_v: string;
+  dc_a: string;
+  dc_kw: string;
+  dc_kwh: string;
+  kwh_t: string | null;
+};
+
+type StatusTableProps = {
+  sunPvDataList?: SunPvDataItem[]; // Optional type to handle undefined data initially
+  isLoading: boolean; // Loading indicator flag
+};
+
+const Status = ({sunPvDataList}: StatusTableProps) => {
   const { layout, fonts, colors, components, spacing } = useTheme();
   const [selectedOption, setSelectedOption] = useState('0');
+  const { userInfo } = useUserStore()
+
+  const plantSeq = userInfo?.plant_seq
+
+  const { data: resData, error, isLoading } = useSWR(
+    `/api/device/inveter/stats?plant_seq=${plantSeq}`,
+    fetcher
+  )
+  console.log('API Response Data:', JSON.stringify(resData, null, 2));
+
+  if (error) {
+    return (
+      <SafeAreaScreen style={{ backgroundColor: colors.background }}>
+        <RNText style={[fonts.size_18, { color: 'red' }]}>
+          Error fetching data
+        </RNText>
+      </SafeAreaScreen>
+    )
+  }
+ 
 
   return (
     <SafeAreaScreen style={{ backgroundColor: colors.background }}>
-      {/* Header */}
       <RNView style={[components.header, { borderBottomWidth: 1, borderColor: colors.rgba010 }]}>
         <TouchRect style={[layout.row, layout.alignCenter, spacing.gap_4, spacing.p_4]}>
           <RNText style={[fonts.w700, fonts.size_18]}>Status</RNText>
@@ -28,9 +72,7 @@ const Status = () => {
       </RNView>
 
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        {/* Content Section */}
         <RNView style={[layout.flex_1, spacing.p_16, spacing.py_30, spacing.gap_14]}>
-          {/* Section Header */}
           <RNView style={[spacing.gap_10]}>
             <RNText style={[fonts.size_24, fonts.w700]}>장치 현황</RNText>
             <RNText style={[fonts.size_14, { color: "#FEC022" }]}>
@@ -95,21 +137,25 @@ const Status = () => {
                   </Table>
 
                   {/* Table Body */}
-                  <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                    <TableWrapper style={{ flexDirection: 'row' }}>
-                      <Cell data="파주시 파평면" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                      <Cell data="06 : 19" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                      <Cell data="흐림" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                      <Cell data="26.5" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                      <Cell data="20%" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                      <Cell data="0 mm" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                      <Cell data="0 cm" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                      <Cell data="85%" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                      <Cell data="0.5 m/s" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                      <Cell data="남서" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                      <Cell data="18 : 34" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                    </TableWrapper>
-                  </Table>
+                  {!isLoading && resData && resData.data && resData.data.data ? (
+                    <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+                      <TableWrapper style={{ flexDirection: 'row' }}> 
+                        <Cell data={resData.data.data.weather_data.area_name} style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                        <Cell data={moment(resData.data.data.weather_data.sunrise, 'HHmm').format('HH : mm')} style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                        <Cell data={resData.data.data.weather_data.sky_desc} style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                        <Cell data={`${resData.data.data.weather_data.t1h}℃`} style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                        <Cell data={`${resData.data.data.weather_data.pop}%`} style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                        <Cell data={`${resData.data.data.weather_data.pcp}`} style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                        <Cell data={resData.data.data.weather_data.sno} style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                        <Cell data={`${resData.data.data.weather_data.reh}%`} style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                        <Cell data={`${resData.data.data.weather_data.wsd} m/s`} style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                        <Cell data={resData.data.data.weather_data.vec_name} style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                        <Cell data={moment(resData.data.data.weather_data.sunset, 'HHmm').format('HH : mm')} style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                      </TableWrapper>
+                    </Table>
+                  ) : (
+                    <ActivityIndicator size="large" color={colors.primary} />
+                  )}
                 </View>
               </ScrollView>
             </View>
@@ -136,251 +182,260 @@ const Status = () => {
                 <Text style={[styles.radioText, fonts.size_18]}>전력저장</Text>
               </TouchableOpacity>
             </View>
-            {selectedOption === '0' && ( 
-            <>
-              <RNView style={[spacing.mt_14]}>
-                <RNView style={[layout.row, layout.justifyBetween, spacing.mt_14]}>
-                  <RNText style={[fonts.size_18, fonts.w700]}>PV(태양광전지) 동작 현황</RNText>
-                  <View style={[layout.row, layout.alignCenter, spacing.gap_4]}>
-                    <View style={[styles.circle, { backgroundColor: '#80ff44' }]} />
-                    <RNText style={[fonts.size_14]}>정상</RNText>
-                    <View style={[styles.circle, { backgroundColor: '#E83830' }]} />
-                    <RNText style={[fonts.size_14]}>오류</RNText>
-                  </View>
+
+            {selectedOption === '0' && (
+              <>
+                <RNView style={[spacing.mt_14]}>
+                  <RNView style={[layout.row, layout.justifyBetween, spacing.mt_14]}>
+                    <RNText style={[fonts.size_18, fonts.w700]}>PV(태양광전지) 동작 현황</RNText>
+                    <View style={[layout.row, layout.alignCenter, spacing.gap_4]}>
+                      <View style={[styles.circle, { backgroundColor: '#80ff44' }]} />
+                      <RNText style={[fonts.size_14]}>정상</RNText>
+                      <View style={[styles.circle, { backgroundColor: '#E83830' }]} />
+                      <RNText style={[fonts.size_14]}>오류</RNText>
+                    </View>
+                  </RNView>
+                  <RNView style={[spacing.mt_20]}>
+                    <ScrollView horizontal={true}>
+                      <View>
+                        <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+                          <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+                            <TableWrapper style={{ flexDirection: 'row' }}>
+                              <Cell data="구분" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="동작상태" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="h" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="DC 입력" style={[styles.header, { width: 500, height: 40 }]} textStyle={styles.headerText} />
+                                <TableWrapper style={{ flexDirection: 'row' }}>
+                                  <Cell data="전압" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="전력" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                </TableWrapper>
+                                <TableWrapper style={{ flexDirection: 'row' }}>
+                                  <Cell data="V" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="A" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                </TableWrapper>
+                              </TableWrapper>
+                            </TableWrapper>
+                          </Table>
+                        </View>
+
+                         {/* Table Body - Dynamically rendering data */}
+                        {sunPvDataList && sunPvDataList.length > 0 ? (
+                          sunPvDataList.map((item: SunPvDataItem, index: number) => (
+                            <Table key={index} borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+                              <TableWrapper style={{ flexDirection: 'row' }}>
+                                <Cell data={item.device_name} style={{ width: 100 }} textStyle={{ textAlign: 'center' }} />
+                                <Cell data={item.device_status === 'Normal' ? '✔' : '✖'} style={{ width: 100 }} textStyle={{ textAlign: 'center' }} />
+                                <Cell data={returnToLocaleStrings(item.t_m)} style={{ width: 100 }} textStyle={{ textAlign: 'center' }} />
+                                <Cell data={returnToLocaleStrings(item.t_o)} style={{ width: 100 }} textStyle={{ textAlign: 'center' }} />
+                                <Cell data={returnToLocaleStrings(item.solar_h)} style={{ width: 100 }} textStyle={{ textAlign: 'center' }} />
+                                <Cell data={returnToLocaleStrings(item.dc_v)} style={{ width: 100 }} textStyle={{ textAlign: 'center' }} />
+                                <Cell data={returnToLocaleStrings(item.dc_a)} style={{ width: 100 }} textStyle={{ textAlign: 'center' }} />
+                                <Cell data={returnToLocaleStrings(item.dc_kw)} style={{ width: 100 }} textStyle={{ textAlign: 'center' }} />
+                                <Cell data={returnToLocaleStrings(item.kwh_t ?? '0')} style={{ width: 100 }} textStyle={{ textAlign: 'center' }} />
+                              </TableWrapper>
+                            </Table>
+                          ))
+                        ) : (
+                          <View>
+                            <Text>No Data Available</Text>
+                          </View>
+                        )}
+                      </View>
+                    </ScrollView>
+                  </RNView>
+
                 </RNView>
-                <RNView style={[spacing.mt_20]}>
-                  <ScrollView horizontal={true}>
-                    <View>
-                      <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+
+                <RNView style={[spacing.mt_14]}>
+                  <RNView style={[layout.row, layout.justifyBetween, spacing.mt_14]}>
+                    <RNText style={[fonts.size_18, fonts.w700]}>인버터 동작 현황</RNText>
+                    <View style={[layout.row, layout.alignCenter, spacing.gap_4]}>
+                      <View style={[styles.circle, { backgroundColor: '#80ff44' }]} />
+                      <RNText style={[fonts.size_14]}>정상</RNText>
+                      <View style={[styles.circle, { backgroundColor: '#E83830' }]} />
+                      <RNText style={[fonts.size_14]}>오류</RNText>
+                    </View>
+                  </RNView>
+                  <View style={[spacing.mt_20]}>
+                    <ScrollView horizontal={true} >
+                      <View>
+                        <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+                          <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+                            <TableWrapper style={{ flexDirection: 'row' }}>
+                              <Cell data="구분" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="동작상태" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="h" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="DC 입력" style={[styles.header, { width: 500, height: 40 }]} textStyle={styles.headerText} />
+                                <TableWrapper style={{ flexDirection: 'row' }}>
+                                  <Cell data="전압" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                </TableWrapper>
+                                <TableWrapper style={{ flexDirection: 'row' }}>
+                                  <Cell data="V" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="A" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                </TableWrapper>
+                              </TableWrapper>
+                            </TableWrapper>
+                          </Table>
+                        </View>
                         <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
                           <TableWrapper style={{ flexDirection: 'row' }}>
-                            <Cell data="구분" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="동작상태" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="h" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="DC 입력" style={[styles.header, { width: 500, height: 40 }]} textStyle={styles.headerText} />
-                              <TableWrapper style={{ flexDirection: 'row' }}>
-                                <Cell data="전압" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="전력" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper>
-                              <TableWrapper style={{ flexDirection: 'row' }}>
-                                <Cell data="V" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="A" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper>
-                            </TableWrapper>
+                            <Cell data="인버터1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="25.4" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="26.5" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="25" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="55" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="485" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="2" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="-" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="101,520" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                           </TableWrapper>
                         </Table>
                       </View>
-                      <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                        <TableWrapper style={{ flexDirection: 'row' }}>
-                          <Cell data="인버터1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="25.4" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="26.5" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="25" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="55" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="485" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="2" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="-" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="101,520" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                        </TableWrapper>
-                      </Table>
-                    </View>
-                  </ScrollView>
-                </RNView>
-              </RNView>
-              
-              <RNView style={[spacing.mt_14]}>
-                <RNView style={[layout.row, layout.justifyBetween, spacing.mt_14]}>
-                  <RNText style={[fonts.size_18, fonts.w700]}>인버터 동작 현황</RNText>
-                  <View style={[layout.row, layout.alignCenter, spacing.gap_4]}>
-                    <View style={[styles.circle, { backgroundColor: '#80ff44' }]} />
-                    <RNText style={[fonts.size_14]}>정상</RNText>
-                    <View style={[styles.circle, { backgroundColor: '#E83830' }]} />
-                    <RNText style={[fonts.size_14]}>오류</RNText>
+                    </ScrollView>
                   </View>
                 </RNView>
-                <View style={[spacing.mt_20]}>
-                  <ScrollView horizontal={true} >
-                    <View>
-                      <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+
+                <RNView style={[spacing.mt_14]}>
+                  <RNView style={[layout.row, layout.justifyBetween, spacing.mt_14]}>
+                    <RNText style={[fonts.size_18, fonts.w700]}>계통 동작 현황</RNText>
+                    <View style={[layout.row, layout.alignCenter, spacing.gap_4]}>
+                      <View style={[styles.circle, { backgroundColor: '#80ff44' }]} />
+                      <RNText style={[fonts.size_14]}>정상</RNText>
+                      <View style={[styles.circle, { backgroundColor: '#E83830' }]} />
+                      <RNText style={[fonts.size_14]}>오류</RNText>
+                    </View>
+                  </RNView>
+                  <View style={[spacing.mt_20]}>
+                    <ScrollView horizontal={true} >
+                      <View>
+                        <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+                          <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+                            <TableWrapper style={{ flexDirection: 'row' }}>
+                              <Cell data="구분" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="동작상태" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
+                                <Cell data="h" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                              </TableWrapper>
+                              <TableWrapper style={{ flexDirection: 'column' }}>
+                                <Cell data="DC 입력" style={[styles.header, { width: 500, height: 40 }]} textStyle={styles.headerText} />
+                                <TableWrapper style={{ flexDirection: 'row' }}>
+                                  <Cell data="전압" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                </TableWrapper>
+                                <TableWrapper style={{ flexDirection: 'row' }}>
+                                  <Cell data="V" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="A" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                </TableWrapper>
+                              </TableWrapper>
+                            </TableWrapper>
+                          </Table>
+                        </View>
                         <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
                           <TableWrapper style={{ flexDirection: 'row' }}>
-                            <Cell data="구분" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="동작상태" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="h" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="DC 입력" style={[styles.header, { width: 500, height: 40 }]} textStyle={styles.headerText} />
-                              <TableWrapper style={{ flexDirection: 'row' }}>
-                                <Cell data="전압" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper>
-                              <TableWrapper style={{ flexDirection: 'row' }}>
-                                <Cell data="V" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="A" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper>
-                            </TableWrapper>
+                            <Cell data="인버터1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="25.4" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="26.5" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="25" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="55" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="485" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="2" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="-" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="101,520" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                           </TableWrapper>
                         </Table>
                       </View>
-                      <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                        <TableWrapper style={{ flexDirection: 'row' }}>
-                          <Cell data="인버터1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="25.4" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="26.5" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="25" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="55" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="485" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="2" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="-" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="101,520" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                        </TableWrapper>
-                      </Table>
-                    </View>
-                  </ScrollView>
-                </View>
-              </RNView>
-              
-              <RNView style={[spacing.mt_14]}>
-                <RNView style={[layout.row, layout.justifyBetween, spacing.mt_14]}>
-                  <RNText style={[fonts.size_18, fonts.w700]}>계통 동작 현황</RNText>
-                  <View style={[layout.row, layout.alignCenter, spacing.gap_4]}>
-                    <View style={[styles.circle, { backgroundColor: '#80ff44' }]} />
-                    <RNText style={[fonts.size_14]}>정상</RNText>
-                    <View style={[styles.circle, { backgroundColor: '#E83830' }]} />
-                    <RNText style={[fonts.size_14]}>오류</RNText>
+                    </ScrollView>
                   </View>
                 </RNView>
-                <View style={[spacing.mt_20]}>
-                  <ScrollView horizontal={true} >
-                    <View>
-                      <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                        <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                          <TableWrapper style={{ flexDirection: 'row' }}>
-                            <Cell data="구분" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="동작상태" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
-                              <Cell data="h" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                            </TableWrapper>
-                            <TableWrapper style={{ flexDirection: 'column' }}>
-                              <Cell data="DC 입력" style={[styles.header, { width: 500, height: 40 }]} textStyle={styles.headerText} />
-                              <TableWrapper style={{ flexDirection: 'row' }}>
-                                <Cell data="전압" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper>
-                              <TableWrapper style={{ flexDirection: 'row' }}>
-                                <Cell data="V" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="A" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper>
-                            </TableWrapper>
-                          </TableWrapper>
-                        </Table>
-                      </View>
-                      <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                        <TableWrapper style={{ flexDirection: 'row' }}>
-                          <Cell data="인버터1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="25.4" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="26.5" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="25" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="55" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="485" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="2" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="-" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                          <Cell data="101,520" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                        </TableWrapper>
-                      </Table>
-                    </View>
-                  </ScrollView>
-                </View>
-              </RNView>
-            </>
+              </>
             )}
 
             {selectedOption === '1' && (
@@ -420,20 +475,20 @@ const Status = () => {
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
                                 <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper> 
+                              </TableWrapper>
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="전력입력" style={[styles.header, { width: 400, height: 40 }]} textStyle={styles.headerText} />
                                 <TableWrapper style={{ flexDirection: 'row' }}>
                                   <Cell data="전압" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="전력" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} /> 
+                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                 </TableWrapper>
                                 <TableWrapper style={{ flexDirection: 'row' }}>
                                   <Cell data="V" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="A" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} /> 
+                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                 </TableWrapper>
                               </TableWrapper>
                             </TableWrapper>
@@ -450,7 +505,7 @@ const Status = () => {
                             <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="485" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="2" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                           </TableWrapper>
                         </Table>
                       </View>
@@ -493,20 +548,20 @@ const Status = () => {
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="모듈온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
                                 <Cell data="kWh/m²" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper> 
+                              </TableWrapper>
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="전력입력" style={[styles.header, { width: 400, height: 40 }]} textStyle={styles.headerText} />
                                 <TableWrapper style={{ flexDirection: 'row' }}>
                                   <Cell data="전압" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="전력" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} /> 
+                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                 </TableWrapper>
                                 <TableWrapper style={{ flexDirection: 'row' }}>
                                   <Cell data="V" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="A" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} /> 
+                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                 </TableWrapper>
                               </TableWrapper>
                             </TableWrapper>
@@ -523,7 +578,7 @@ const Status = () => {
                             <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="485" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="2" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                           </TableWrapper>
                         </Table>
                       </View>
@@ -566,24 +621,24 @@ const Status = () => {
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="충전율" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
                                 <Cell data="%" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper> 
+                              </TableWrapper>
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="충전시간" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
                                 <Cell data="h" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper> 
+                              </TableWrapper>
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="전력입력" style={[styles.header, { width: 400, height: 40 }]} textStyle={styles.headerText} />
                                 <TableWrapper style={{ flexDirection: 'row' }}>
                                   <Cell data="전압" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="전력" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} /> 
+                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                 </TableWrapper>
                                 <TableWrapper style={{ flexDirection: 'row' }}>
                                   <Cell data="V" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="A" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} /> 
+                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                 </TableWrapper>
                               </TableWrapper>
                             </TableWrapper>
@@ -600,8 +655,8 @@ const Status = () => {
                             <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="485" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="2" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
-                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
+                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                           </TableWrapper>
                         </Table>
                       </View>
@@ -644,24 +699,24 @@ const Status = () => {
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="충전율" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
                                 <Cell data="%" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper> 
+                              </TableWrapper>
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="충전시간" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
                                 <Cell data="h" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper> 
+                              </TableWrapper>
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="전력입력" style={[styles.header, { width: 400, height: 40 }]} textStyle={styles.headerText} />
                                 <TableWrapper style={{ flexDirection: 'row' }}>
                                   <Cell data="전압" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="전력" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} /> 
+                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                 </TableWrapper>
                                 <TableWrapper style={{ flexDirection: 'row' }}>
                                   <Cell data="V" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="A" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                   <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} /> 
+                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                 </TableWrapper>
                               </TableWrapper>
                             </TableWrapper>
@@ -678,7 +733,7 @@ const Status = () => {
                             <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="485" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="2" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                            <Cell data="1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                           </TableWrapper>
                         </Table>
                       </View>
@@ -721,7 +776,7 @@ const Status = () => {
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="사용전력" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
                                 <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper> 
+                              </TableWrapper>
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="누적 사용전력량" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
                                 <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
@@ -737,7 +792,7 @@ const Status = () => {
                             <Cell data="26.5" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="25" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="55" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                            <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                            <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                           </TableWrapper>
                         </Table>
                       </View>
@@ -782,7 +837,7 @@ const Status = () => {
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="화재예상 렉온도" style={[styles.header, { width: 100, height: 80 }]} textStyle={styles.headerText} />
                                 <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                              </TableWrapper> 
+                              </TableWrapper>
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="화재감지" style={[styles.header, { width: 100, height: 120 }]} textStyle={styles.headerText} />
                               </TableWrapper>
@@ -797,14 +852,14 @@ const Status = () => {
                             <Cell data="26.5" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="25" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="55" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
-                            <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} /> 
+                            <Cell data="0.01" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                           </TableWrapper>
                         </Table>
                       </View>
                     </ScrollView>
                   </RNView>
                 </RNView>
-                 
+
               </>
             )}
           </RNView>
@@ -818,8 +873,8 @@ const styles = StyleSheet.create({
   circle: {
     width: 12,
     height: 12,
-    borderRadius: 6, // Makes the circle
-    marginRight: 6,  // Space between the circle and the text
+    borderRadius: 6,
+    marginRight: 6,
   },
   header: { backgroundColor: 'rgba(0, 12, 101, 0.25)', height: 40, justifyContent: 'center' },
   subHeader: { backgroundColor: 'rgba(0, 12, 101, 0.25)', height: 40, justifyContent: 'center' },
