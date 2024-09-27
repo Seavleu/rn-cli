@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, TouchableOpacity, LayoutAnimation, ActivityIndicator, Alert } from 'react-native';
+import { ScrollView, TouchableOpacity, LayoutAnimation, ActivityIndicator, Alert, FlatList } from 'react-native';
 import DateRangePicker from '@/components/DateRangePicker';
 import useTheme from '@/theme/hooks';
 import moment from 'moment';
@@ -11,6 +11,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import useSWR from 'swr';
 import { useUserStore } from '@/stores';
 import { fetcher } from '@/services';
+import Animated from 'react-native-reanimated';
 
 type DateRange = {
   start: string;
@@ -91,6 +92,97 @@ const AlarmHistory = () => {
     setDeviceCheck(userInfo?.device !== 'mobile');
   }, [userInfo]);
 
+  // Function to render each card item
+  const renderCard = ({ item, index }) => {
+    const firstKey = Object.keys(item)[0];
+    const alarms = item[firstKey];
+
+    return (
+      <TouchRect
+        key={index}
+        onPress={() => togglePanel(index)}
+        style={[
+          {
+            borderColor: colors.primary,
+            borderWidth: 1,
+            borderRadius: 8,
+            marginBottom: 20,
+            padding: 15,
+            backgroundColor: expandedIndex === index ? '#fff' : colors.background,
+          },
+        ]}
+      >
+        {/* Container for the Title and Icon */}
+        <RNView style={[layout.row, layout.justifyBetween, layout.alignCenter]}>
+          <RNText
+            style={[
+              fonts.size_16,
+              fonts.w600,
+              { color: expandedIndex === index ? '#666' : '#fff' },
+            ]}
+          >
+            {firstKey} 문제알람 내용
+          </RNText>
+          <Icon
+            name={expandedIndex === index ? "chevron-up" : "chevron-down"}
+            size={20}
+            color={expandedIndex === index ? '#666' : '#fff'}
+          />
+        </RNView>
+
+        {expandedIndex === index && (
+          <RNView style={{ marginTop: 10 }}>
+            {alarms.map((alarm: AlarmDetails, idx: number) => (
+              <RNView
+                key={idx}
+                style={[
+                  layout.col,
+                  spacing.p_10,
+                  {
+                    borderTopWidth: idx === 0 ? 0 : 1,
+                    borderTopColor: '#ddd',
+                    backgroundColor: '#fff',
+                  },
+                ]}
+              >
+                <RNText style={[fonts.size_14, fonts.w600, { marginBottom: 4, color: '#111' }]}>
+                  • {alarm.error_name}
+                </RNText>
+                <RNText style={[fonts.size_14, { marginBottom: 8, color: '#111' }]}>
+                  {alarm.error_message}
+                </RNText>
+                <RNView
+                  style={[
+                    layout.row,
+                    layout.justifyBetween,
+                    spacing.pt_4,
+                    spacing.pb_4,
+                    { backgroundColor: '#fff' },
+                  ]}
+                >
+                  <RNText
+                    style={[
+                      fonts.w700,
+                      fonts.size_18,
+                      {
+                        color: alarm.error_type === 'Warning' ? '#e83830' : '#111',
+                      },
+                    ]}
+                  >
+                    {alarm.error_type}
+                  </RNText>
+                  <RNText style={[fonts.size_14, { color: '#111' }]}>
+                    {alarm.reg_datetime.slice(10, 19)}
+                  </RNText>
+                </RNView>
+              </RNView>
+            ))}
+          </RNView>
+        )}
+      </TouchRect>
+    );
+  };
+
   // Loading state
   if (isLoading && !resData) {
     return (
@@ -139,83 +231,17 @@ const AlarmHistory = () => {
 
         {/* Render Cards */}
         <RNView style={[spacing.mt_10, spacing.p_10]}>
-          {resData?.data?.list?.map((data, index) => {
-            const firstKey = Object.keys(data)[0];
-            const alarms = data[firstKey];
-            return (
-              <TouchRect
-                key={index}
-                onPress={() => togglePanel(index)}
-                style={[
-                  {
-                    borderColor: colors.primary,
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    marginBottom: 20,
-                    padding: 15,
-                    backgroundColor: expandedIndex === index ? '#fff' : colors.background,
-                  },
-                ]}
-              >
-               <RNText
-                  style={[
-                    fonts.size_16,
-                    fonts.w600, 
-                    { color: expandedIndex === index ?  '#666' : colors.text  },
-                  ]}
-                >
-                  {firstKey} 문제알람 내용
-                  <Icon name="chevron-down" size={20} color={colors.text} />
-                </RNText>
-
-                {expandedIndex === index && (
-                  <RNView style={{ marginTop: 10 }}>
-                    {alarms.map((alarm: AlarmDetails, idx: number) => (
-                      <RNView
-                        key={idx}
-                        style={[
-                          layout.col,
-                          spacing.p_10,
-                          {
-                            borderTopWidth: idx === 0 ? 0 : 1,
-                            borderTopColor: '#ddd',
-                            backgroundColor: '#fff', 
-                          },
-                        ]}
-                      > 
-                        <RNText style={[fonts.size_14, fonts.w600, { marginBottom: 4,color: '#111'  }]}>
-                          • {alarm.error_name}
-                        </RNText> 
-                        <RNText style={[fonts.size_14, { marginBottom: 8 , color: '#111' }]}>
-                          {alarm.error_message}  
-                        </RNText> 
-                        <RNView
-                          style={[
-                            layout.row,
-                            layout.justifyBetween,
-                            spacing.pt_4,
-                            spacing.pb_4,
-                            {backgroundColor: '#fff'}
-                          ]}
-                        >
-                          <RNText
-                            style={[fonts.w700, fonts.size_18, {
-                              color: alarm.error_type === 'Warning' ? '#e83830' : '#111',
-                            }]}
-                          >
-                            {alarm.error_type}
-                          </RNText>
-                          <RNText style={[fonts.size_14, {color: '#111' }]}>{alarm.reg_datetime.slice(10,19)}</RNText>
-                        </RNView>
-                      </RNView>
-                    ))}
-                  </RNView>
-                )}
-              </TouchRect>
-            );
-          })}
+          <FlatList
+            data={resData?.data?.list}
+            renderItem={renderCard}
+            keyExtractor={(item, index) => index.toString()}
+            // onEndReached={() => {
+            //   setPage(prev => prev + 1);
+            //   mutate();
+            // }}
+            // onEndReachedThreshold={0.5}
+          />
         </RNView>
-
       </ScrollView>
     </SafeAreaScreen>
   );
