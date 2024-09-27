@@ -7,6 +7,7 @@ import UserInfo from '@/screens/UserInfo'
 import Setting from '@/screens/Setting'   
 import Error from '@/screens/Error'
 import Status from '@/screens/Status'
+import AlarmHistory from '@/screens/AlarmHistory'
 
 type AppNavigator = {
   name: keyof AppNavigationParamList
@@ -41,5 +42,9 @@ export const APP_NAVIGATOR = [
   {
     name: 'Status',
     component: Status
+  },
+  {
+    name: 'AlarmHistory',
+    component: AlarmHistory
   }
 ] as AppNavigator[]

@@ -11,8 +11,8 @@ import { useUserStore } from '@/stores';
 import useSWR from 'swr';
 import { fetcher } from '@/services';
 import moment from 'moment';
-import { returnToLocaleStrings } from '@/utils/format';
-import { SunPvDataItem, SunPvDataTotal, InverterDataItem, InverterDataTotal, PvDataList, PvDataTotal } from '@/types/scheme';
+import { returnToday, returnToLocaleStrings } from '@/utils/format';
+import { SunPvDataItem, SunPvDataTotal, InverterDataItem, InverterDataTotal, PvDataList, PvDataTotal, WeatherData } from '@/types/scheme';
 
 const Status = () => {
   const { layout, fonts, colors, components, spacing } = useTheme();
@@ -25,14 +25,15 @@ const Status = () => {
     `/api/device/inveter/stats?plant_seq=${plantSeq}`,
     fetcher
   )
-  // console.log('API Response Data:', JSON.stringify(resData, null, 2));
+  console.log('API Response Data:', JSON.stringify(resData, null, 2));
 
-  const sunPvDataList = resData?.data.data.sun_pv_data_list;
-  const sunPvDataTotal = resData?.data.data.sun_pv_data_total;
+  const sunPvDataList = resData?.data?.data?.sun_pv_data_list;
+  const sunPvDataTotal = resData?.data?.data?.sun_pv_data_total;
   const inverterDataList = resData?.data?.data?.inverter_data_list;
   const inverterDataTotal = resData?.data?.data?.inverter_data_total;
   const pvDataList = resData?.data?.data?.pv_data_list;
   const pvDataTotal = resData?.data?.data?.pv_data_total;
+  const weatherData = resData?.data?.data?.weather_data;
 
   if (error) {
     return (
@@ -51,11 +52,11 @@ const Status = () => {
           <RNText style={[fonts.w700, fonts.size_18]}>Status</RNText>
           <Icon name="chevron-down" size={20} color={colors.text} />
         </TouchRect>
-        <View>
+        <RNView>
           <TouchCircle style={[spacing.p_4]}>
             <Icon name="menu" size={25} color={colors.text} />
-          </TouchCircle>
-        </View>
+          </TouchCircle>  
+        </RNView>
       </RNView>
 
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -63,19 +64,26 @@ const Status = () => {
           <RNView style={[spacing.gap_10]}>
             <RNText style={[fonts.size_24, fonts.w700]}>장치 현황</RNText>
             <RNText style={[fonts.size_14, { color: "#FEC022" }]}>
-              2024년 9월 13일(오늘){' '}
+                {returnToday()}{' '}
               <RNText>실시간 장치 현황을 확인할 수 있습니다. {'\n'}</RNText>
               <RNText style={[fonts.size_14]}>
                 * 오류발생 시 문제알람 이력을 통해 내용을 확인할 수 있습니다.
               </RNText>
+              <RNText>오류발생 시 문제알람 이력을 통해 내용을 확인할 수 있습니다. </RNText>
             </RNText>
           </RNView>
 
           {/* Weather Information Section */}
           <RNView>
             <RNView style={[layout.row, layout.justifyBetween]}>
-              <RNText style={[fonts.size_18, fonts.w700]}>기상환경 현황</RNText>
-              <RNText style={[fonts.size_14]}>측정시간 : 09 : 00</RNText>
+              <RNText style={[fonts.size_18, fonts.w700]}>
+                기상환경 현황
+              </RNText>
+              {weatherData && (
+                <RNText style={[fonts.size_14]}>
+                  측정시간 : {moment(weatherData.base_time, 'HHmm').format('HH : mm')}
+                </RNText>
+              )}
             </RNView>
 
             <View style={[spacing.mt_20]}>
@@ -94,6 +102,8 @@ const Status = () => {
                         <Cell data="기온" style={[styles.header, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                         <Cell data="℃" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                       </TableWrapper>
+
+                      {/* {moment(resData.weather_data.base_time, 'HHmm').format('HH : mm')} */}
                       <TableWrapper style={{ flexDirection: 'column' }}>
                         <Cell data="강수/적설 확률" style={[styles.header, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                         <Cell data="%" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
@@ -145,15 +155,15 @@ const Status = () => {
                 </View>
               </ScrollView>
             </View>
-            
+
             {/* Radio Buttons */}
-            <View style={[layout.row, layout.justifyCenter, layout.alignCenter, spacing.p_30, spacing.gap_10, spacing.mt_14, {backgroundColor: 'rgba(0, 0, 0, 0.1)'}]}>
+            <View style={[layout.row, layout.justifyCenter, layout.alignCenter, spacing.p_30, spacing.gap_10, spacing.mt_14, { backgroundColor: 'rgba(0, 0, 0, 0.1)' }]}>
               <TouchableOpacity
                 style={[layout.row, layout.justifyCenter, spacing.mr_30]}
                 onPress={() => setSelectedOption('0')}
               >
-                <View style={[styles.radio, selectedOption === '0' && {backgroundColor: '#E83830'}]}>
-                  {selectedOption === '0' && <View style={{backgroundColor: colors.background}} />}
+                <View style={[styles.radio, selectedOption === '0' && { backgroundColor: '#E83830' }]}>
+                  {selectedOption === '0' && <View style={{ backgroundColor: colors.background }} />}
                 </View>
                 <Text style={[fonts.size_18, spacing.ml_10]}>전력발전과 송전</Text>
               </TouchableOpacity>
@@ -162,13 +172,13 @@ const Status = () => {
                 style={[layout.row, layout.justifyCenter, spacing.mr_30]}
                 onPress={() => setSelectedOption('1')}
               >
-                <View style={[styles.radio, selectedOption === '1' && {backgroundColor: '#E83830'}]}>
-                  {selectedOption === '1' && <View style={{backgroundColor: colors.background}} />}
+                <View style={[styles.radio, selectedOption === '1' && { backgroundColor: '#E83830' }]}>
+                  {selectedOption === '1' && <View style={{ backgroundColor: colors.background }} />}
                 </View>
                 <Text style={[fonts.size_18, spacing.ml_10]}>전력저장</Text>
               </TouchableOpacity>
             </View>
-            
+
 
             {selectedOption === '0' && (
               <>
@@ -215,21 +225,26 @@ const Status = () => {
                               </TableWrapper>
                               <TableWrapper style={{ flexDirection: 'column' }}>
                                 <Cell data="DC 입력" style={[styles.header, { width: 500, height: 40 }]} textStyle={styles.headerText} />
+
+                                {/* First Row with headerLess style, adding top border */}
                                 <TableWrapper style={{ flexDirection: 'row' }}>
-                                  <Cell data="전압" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="전류" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="전력" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="누적 발전량" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="전압" style={[styles.headerLessWithTopBorder, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="전류" style={[styles.headerLessWithTopBorder, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="전력" style={[styles.headerLessWithTopBorder, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="발전량" style={[styles.headerLessWithTopBorder, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="누적 발전량" style={[styles.headerLessWithTopBorder, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                 </TableWrapper>
+
+                                {/* Second Row with headerLess style */}
                                 <TableWrapper style={{ flexDirection: 'row' }}>
-                                  <Cell data="V" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="A" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="kW" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
-                                  <Cell data="kWh" style={[styles.subHeader, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="V" style={[styles.headerLess, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="A" style={[styles.headerLess, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kW" style={[styles.headerLess, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kWh" style={[styles.headerLess, { width: 100, height: 40 }]} textStyle={styles.headerText} />
+                                  <Cell data="kWh" style={[styles.headerLess, { width: 100, height: 40 }]} textStyle={styles.headerText} />
                                 </TableWrapper>
                               </TableWrapper>
+
                             </TableWrapper>
                           </Table>
                         </View>
@@ -288,7 +303,7 @@ const Status = () => {
                               </Table>
                             )}
                           </>
-                        ): (
+                        ) : (
                           <Text>
                             No data
                           </Text>
@@ -457,7 +472,7 @@ const Status = () => {
                                       <View style={[styles.circle, { backgroundColor: item.device_status === 'Normal' ? '#80ff44' : '#E83830' }]} />
                                     </View>
                                   } style={{ width: 100 }} />
-                                  <Cell data={returnToLocaleStrings(item.p_v)} style={{ width: 100 }} textStyle={{ textAlign: 'center'}} />
+                                  <Cell data={returnToLocaleStrings(item.p_v)} style={{ width: 100 }} textStyle={{ textAlign: 'center' }} />
                                   <Cell data={returnToLocaleStrings(item.p_rs_v)} style={{ width: 100 }} textStyle={{ textAlign: 'center', color: '#00D1FF' }} />
                                   <Cell data={returnToLocaleStrings(item.p_st_v)} style={{ width: 100 }} textStyle={{ textAlign: 'center', color: '#00D1FF' }} />
                                   <Cell data={returnToLocaleStrings(item.p_tr_v)} style={{ width: 100 }} textStyle={{ textAlign: 'center', color: '#00D1FF' }} />
@@ -899,7 +914,7 @@ const Status = () => {
                             </TableWrapper>
                           </Table>
                         </View>
-                        <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)'}}>
+                        <Table borderStyle={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
                           <TableWrapper style={{ flexDirection: 'row' }}>
                             <Cell data="인버터1" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
                             <Cell data="" style={[styles.body, { width: 100 }]} textStyle={styles.text} />
@@ -934,8 +949,8 @@ const styles = StyleSheet.create({
   header: { backgroundColor: 'rgba(0, 12, 101, 0.25)', height: 40, justifyContent: 'center' },
   subHeader: { backgroundColor: 'rgba(0, 12, 101, 0.25)', height: 40, justifyContent: 'center' },
   headerText: { color: '#fff', textAlign: 'center', fontWeight: 'bold' },
-  text: { color: '#fff',textAlign: 'center', fontWeight: '100' },
-  body: { height: 40, justifyContent: 'center' }, 
+  text: { color: '#fff', textAlign: 'center', fontWeight: '100' },
+  body: { height: 40, justifyContent: 'center' },
   radio: {
     width: 22,
     height: 22,
@@ -945,7 +960,27 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     justifyContent: 'center',
     alignItems: 'center',
-  }
+  },
+  headerLess: {
+    backgroundColor: 'rgba(0, 12, 101, 0.25)', // Set background color as in the image
+    borderBottomWidth: 1,  // Ensure there is a border between rows
+    borderColor: 'rgba(255, 255, 255, 0.2)',  // Border color similar to the image
+    borderTopWidth: 0,  // No border on the top
+    borderLeftWidth: 0, // No border on the left side
+    borderRightWidth: 0, // No border on the right side
+  },
+
+
+  headerLessWithTopBorder: {
+    backgroundColor: 'rgba(0, 12, 101, 0.25)',
+    borderBottomWidth: 1,  // Bottom border to separate rows
+    borderTopWidth: 1,  // Add top border for the first row
+    borderColor: 'rgba(255, 255, 255, 0.2)',  // Set the border color for the top and bottom 
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+  },
+
+
 });
 
 export default Status;

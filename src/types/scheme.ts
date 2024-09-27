@@ -82,3 +82,34 @@ export type StatusTableProps = {
   pvDataList: PvDataList[];
   pvDataTotal: PvDataTotal;
 };
+
+export type WeatherData = {
+  area_code: string;
+  area_name: string;
+  base_time: string;
+  base_date: string;
+  t1h: string;
+  reh: string;
+  wsd: string;
+  sky: string;
+  sky_desc: string;
+  pty: string;
+  pm10value: string;
+  pm10_desc: string;
+  pm25value: string;
+  pm25_desc: string;
+  o3value: string;
+  o3_desc: string;
+  fine_dust: number;
+  sunrise: string;
+  sunset: string;
+  pop: string;
+  pcp: string;
+  sno: string;
+  vec: string;
+  vec_16: number;
+  vec_name: string;
+  rn1: string;
+  yesterday_t1h: string;
+  air_place_name: string;
+};

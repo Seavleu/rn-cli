@@ -1,9 +1,8 @@
 import moment from 'moment';
 
-// Set the locale to Korean
 moment.locale('ko');
 
-// Format date to a localized string (e.g., 'YYYY년 MM월 DD일')
+// Format date  'YYYY년 MM월 DD일'
 export const returnToLocale = (val: string): string => {
   const sanitizedVal = val.replace(/-/g, '');
   return sanitizedVal
@@ -21,10 +20,14 @@ export const returnToday = (): string => {
   return moment().format('YYYY년 M월 D일') + '(오늘)';
 };
 
+export const leaveDay = (): string => {
+  return moment().format('YYYY년 M월 D일')
+}
+
 // Get yesterday's date formatted in Korean (e.g., '2024년 9월 25일(어제)')
 export const returnYesterday = (): string => {
   return moment().subtract(1, 'days').format('YYYY년 M월 D일') + '(어제)';
-};
+}; 
 
 // Calculate rotation for a donut chart based on the given value
 export const returnDonutRotate = (max: number, val: number): number => {
