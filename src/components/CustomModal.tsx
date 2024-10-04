@@ -1,5 +1,5 @@
 import { Modal, TouchableOpacity } from 'react-native'
-import React, { ReactNode } from 'react'
+import { ReactNode } from 'react'
 import useTheme from '@/theme/hooks'
 
 type CustomModalProps = {

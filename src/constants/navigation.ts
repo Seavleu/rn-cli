@@ -1,13 +1,13 @@
 import { ComponentType } from 'react'
 import { AppNavigationParamList } from '@/navigation/AppNavigator'
-import AddBoard from '@/screens/AddBoard'
-import Detail from '@/screens/Detail'
-import History from '@/screens/History'
+import AddBoard from '@/screens/DeviceManagement/AddBoard'
+import Detail from '@/screens/DeviceManagement/Detail'
+import History from '@/screens/DeviceManagement/History'
 import UserInfo from '@/screens/UserInfo'
-import Setting from '@/screens/Setting'   
-import Error from '@/screens/Error'
-import Status from '@/screens/Status'
-import AlarmHistory from '@/screens/AlarmHistory'
+import Setting from '@/screens/DeviceManagement/Setting' 
+import Error from '@/screens/DeviceManagement/Error'
+import Status from '@/screens/DeviceManagement/Status'
+import AlarmHistory from '@/screens/DeviceManagement/AlarmHistory'
 
 type AppNavigator = {
   name: keyof AppNavigationParamList

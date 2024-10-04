@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { TouchableOpacity, StyleSheet, TextInput, Platform } from 'react-native';
-import { RNView, RNText } from './Custom';
+import { RNText, RNView } from './Custom';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import moment from 'moment';
-import Icon from 'react-native-vector-icons/Ionicons'; // Ensure this is installed or swap for another icon library
+import { format, subDays, subMonths } from 'date-fns'
+import Icon from 'react-native-vector-icons/Ionicons';  
 import useTheme from '@/theme/hooks';
 import { TouchRect } from './Touch';
 
@@ -13,24 +13,24 @@ type DateRangePickerProps = {
 };
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({ select_date, onDateRangeSelected }) => {
-  const { layout, fonts, colors, spacing } = useTheme();
-  const [selectedRange, setSelectedRange] = useState<number>(select_date); // Use prop to initialize state
-  const [startDate, setStartDate] = useState<string | null>(moment().subtract(7, 'days').format('YYYY-MM-DD'));
-  const [endDate, setEndDate] = useState<string | null>(moment().format('YYYY-MM-DD'));
+  const { layout, fonts, colors, spacing } = useTheme()
+  const [selectedRange, setSelectedRange] = useState<number>(select_date)
+  const [startDate, setStartDate] = useState<string | null>(format(subDays(new Date(), 7), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState<string | null>(format(new Date(), 'yyyy-MM-dd'));
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
   // Effect to update date range based on selectedRange
   useEffect(() => {
     if (selectedRange === 1) {
-      const start = moment().subtract(7, 'days').format('YYYY-MM-DD');
-      const end = moment().format('YYYY-MM-DD');
+      const start = format(subDays(new Date(), 7), 'yyyy-MM-dd')
+      const end = format(new Date(), 'yyyy-MM-dd')
       setStartDate(start);
       setEndDate(end);
       onDateRangeSelected({ start, end });
     } else if (selectedRange === 2) {
-      const start = moment().subtract(1, 'month').format('YYYY-MM-DD');
-      const end = moment().format('YYYY-MM-DD');
+      const start = format(subMonths(new Date(), 1), 'yyyy-MM-dd')
+      const end = format(new Date(), 'yyyy-MM-dd')
       setStartDate(start);
       setEndDate(end);
       onDateRangeSelected({ start, end });
@@ -40,35 +40,35 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ select_date, onDateRa
   const handleRangeSelect = (range: number) => {
     setSelectedRange(range);
     if (range === 1) {
-      const start = moment().subtract(7, 'days').format('YYYY-MM-DD');
-      const end = moment().format('YYYY-MM-DD');
+      const start = format(subDays(new Date(), 7), 'yyyy-MM-dd')
+      const end = format(new Date(), 'yyyy-MM-dd')
       setStartDate(start);
       setEndDate(end);
       onDateRangeSelected({ start, end });
     } else if (range === 2) {
-      const start = moment().subtract(1, 'month').format('YYYY-MM-DD');
-      const end = moment().format('YYYY-MM-DD');
+      const start = format(subMonths(new Date(), 1), 'yyyy-MM-dd')
+      const end = format(new Date(), 'yyyy-MM-dd')
       setStartDate(start);
       setEndDate(end);
       onDateRangeSelected({ start, end });
     } else if (range === 3) {
-      setShowStartPicker(true); // Open start date picker for custom range
+      setShowStartPicker(true); 
     }
   };
 
   const onStartDateChange = (event: any, date?: Date) => {
     setShowStartPicker(false);
     if (date) {
-      const formattedDate = moment(date).format('YYYY-MM-DD');
+      const formattedDate = format(date, 'yyyy-MM-dd');
       setStartDate(formattedDate);
-      setShowEndPicker(true); // Automatically open end date picker after selecting start
+      setShowEndPicker(true);  
     }
   };
 
   const onEndDateChange = (event: any, date?: Date) => {
     setShowEndPicker(false);
     if (date && startDate) {
-      const formattedDate = moment(date).format('YYYY-MM-DD');
+      const formattedDate = format(date,'yyyy-MM-dd');
       setEndDate(formattedDate);
       onDateRangeSelected({ start: startDate, end: formattedDate });
     }
@@ -102,7 +102,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ select_date, onDateRa
       <RNView style={[layout.row, layout.alignCenter, layout.justifyCenter, spacing.mb_20, spacing.gap_10]}>
         <TouchRect onPress={() => selectedRange === 3 && setShowStartPicker(true)} style={[layout.flex_1]}>
           <TextInput
-            style={[colors.text, fonts.alignCenter, spacing.pt_14, { width: 150, backgroundColor: '#333', borderRadius: 5 }]}
+            style={[  fonts.alignCenter, spacing.pt_14, {color: 'white', width: 150, backgroundColor: '#333', borderRadius: 5 }]}
             value={startDate || 'YYYY.MM.DD'}
             editable={false}
           />
@@ -110,7 +110,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ select_date, onDateRa
         <RNText style={[fonts.size_16, fonts.w600]}>~</RNText>
         <TouchRect onPress={() => selectedRange === 3 && setShowEndPicker(true)} style={[layout.flex_1]}>
           <TextInput
-            style={[colors.text, fonts.alignCenter, spacing.pt_14, { width: 150, backgroundColor: '#333', borderRadius: 5 }]}
+            style={[  fonts.alignCenter, spacing.pt_14, { color: 'white', width: 150, backgroundColor: '#333', borderRadius: 5 }]}
             value={endDate || 'YYYY.MM.DD'}
             editable={false}
           />

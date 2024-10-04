@@ -22,7 +22,7 @@ export default (colors: Colors) => {
       fontSize: 16
     },
     header: {
-      height: 60,
+      height: 70,
       paddingHorizontal: 12,
       flexDirection: 'row',
       justifyContent: 'space-between',
