@@ -1,4 +1,4 @@
-import { View, Text, Switch } from 'react-native'
+import { View, Switch } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaScreen } from '@/components/SafeAreaScreen'
 import { RNText, RNView } from '@/components/Custom'
@@ -17,18 +17,21 @@ const Setting = ({ navigation }: SettingProps) => {
   const toggleSwitch = () => setIsEnabled((previousState) => !previousState)
 
   const Header = () => (
-    <View
+    <RNView
       style={[
-        components.header,
-        { borderBottomWidth: 1, borderColor: colors.rgba010 }
-      ]}>
-      <View style={[layout.row, layout.alignCenter, spacing.gap_10]}>
+        components.header, 
+        {borderBottomWidth: 1, borderColor: colors.rgba010}
+      ]}
+    >
+      <RNView style={[layout.row, layout.alignCenter, spacing.gap_10]}>
         <TouchCircle style={[spacing.p_4]} onPress={() => navigation.goBack()}>
-          <Icon name="chevron-back" size={25} color={colors.text} />
+          <Icon name='chevron-back' size={25} color={colors.text}/>
         </TouchCircle>
         <RNText style={[fonts.w700, fonts.size_18]}>설정 관리</RNText>
-      </View>
-    </View>
+
+      </RNView>
+
+    </RNView>
   )
 
   return (

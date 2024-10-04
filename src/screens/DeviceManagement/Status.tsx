@@ -13,6 +13,7 @@ import { fetcher } from '@/services';
 import moment from 'moment';
 import { returnToday, returnToLocaleStrings } from '@/utils/format';
 import { SunPvDataItem, SunPvDataTotal, InverterDataItem, InverterDataTotal, PvDataList, PvDataTotal, WeatherData } from '@/types/scheme';
+import CustomHeader from '@/components/CustomHeader';
 
 const Status = () => {
   const { layout, fonts, colors, components, spacing } = useTheme();
@@ -24,8 +25,7 @@ const Status = () => {
   const { data: resData, error, isLoading } = useSWR(
     `/api/device/inveter/stats?plant_seq=${plantSeq}`,
     fetcher
-  )
-  console.log('API Response Data:', JSON.stringify(resData, null, 2));
+  ) 
 
   const sunPvDataList = resData?.data?.data?.sun_pv_data_list;
   const sunPvDataTotal = resData?.data?.data?.sun_pv_data_total;
@@ -47,18 +47,19 @@ const Status = () => {
 
   return (
     <SafeAreaScreen style={{ backgroundColor: colors.background }}>
-      <RNView style={[components.header, { borderBottomWidth: 1, borderColor: colors.rgba010 }]}>
-        <TouchRect style={[layout.row, layout.alignCenter, spacing.gap_4, spacing.p_4]}>
+      {/* <RNView style={[components.header, { borderBottomWidth: 1, borderColor: colors.rgba010 }]}>
+      <TouchRect style={[layout.row, layout.alignCenter, spacing.gap_4, spacing.p_4]}>
           <RNText style={[fonts.w700, fonts.size_18]}>Status</RNText>
           <Icon name="chevron-down" size={20} color={colors.text} />
-        </TouchRect>
-        <RNView>
+        </TouchRect>  
+       <RNView>
           <TouchCircle style={[spacing.p_4]}>
-            <Icon name="menu" size={25} color={colors.text} />
+          <Icon name="menu" size={25} color={colors.text} />
           </TouchCircle>  
-        </RNView>
-      </RNView>
+          </RNView> 
+      </RNView> */}
 
+          <CustomHeader />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <RNView style={[layout.flex_1, spacing.p_16, spacing.py_30, spacing.gap_14]}>
           <RNView style={[spacing.gap_10]}>
