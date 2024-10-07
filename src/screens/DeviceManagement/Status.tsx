@@ -47,18 +47,6 @@ const Status = () => {
 
   return (
     <SafeAreaScreen style={{ backgroundColor: colors.background }}>
-      {/* <RNView style={[components.header, { borderBottomWidth: 1, borderColor: colors.rgba010 }]}>
-      <TouchRect style={[layout.row, layout.alignCenter, spacing.gap_4, spacing.p_4]}>
-          <RNText style={[fonts.w700, fonts.size_18]}>Status</RNText>
-          <Icon name="chevron-down" size={20} color={colors.text} />
-        </TouchRect>  
-       <RNView>
-          <TouchCircle style={[spacing.p_4]}>
-          <Icon name="menu" size={25} color={colors.text} />
-          </TouchCircle>  
-          </RNView> 
-      </RNView> */}
-
           <CustomHeader />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <RNView style={[layout.flex_1, spacing.p_16, spacing.py_30, spacing.gap_14]}>
